@@ -1,0 +1,45 @@
+{
+  "name": "npm-dependency-analysis",
+  "version": "1.0.0",
+  "description": "Ferramenta de coleta de dados para análise do impacto das atualizações de dependências no esforço de manutenção em projetos open-source do ecossistema NPM",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "collect": "node src/index.js --phase=collect",
+    "export": "node src/index.js --phase=export",
+    "validate": "node src/index.js --phase=validate",
+    "lint": "eslint src/",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest"
+  },
+  "keywords": [
+    "npm",
+    "dependencies",
+    "maintenance",
+    "open-source",
+    "github",
+    "research",
+    "software-engineering"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@octokit/graphql": "^8.2.1",
+    "@octokit/rest": "^21.1.1",
+    "@octokit/throttling": "^9.4.0",
+    "commander": "^13.1.0",
+    "dotenv": "^16.5.0",
+    "fast-csv": "^5.0.2",
+    "ora": "^8.2.0",
+    "p-limit": "^6.2.0",
+    "semver": "^7.7.1",
+    "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.24.0",
+    "jest": "^29.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
