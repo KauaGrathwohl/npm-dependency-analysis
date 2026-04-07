@@ -12,8 +12,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier . --write",
-    "format:check": "prettier . --check",
-    "test": "node --experimental-vm-modules node_modules/.bin/jest"
+    "format:check": "prettier . --check"
   },
   "keywords": [
     "npm",
