@@ -1,17 +1,8 @@
 import { Octokit } from '@octokit/rest';
 import { graphql } from '@octokit/graphql';
-import { throttling } from '@octokit/throttling';
+import { throttling } from '@octokit/plugin-throttling';
 import config from '../config/index.js';
 import logger from '../config/logger.js';
-
-/**
- * Padrão: Singleton + Facade
- *
- * Encapsula toda a comunicação com a API do GitHub (REST e GraphQL)
- * em um único ponto de acesso. A camada de throttling garante que
- * o script respeite os rate limits da API, evitando bloqueios
- * durante a coleta massiva de dados.
- */
 
 const ThrottledOctokit = Octokit.plugin(throttling);
 
@@ -28,14 +19,14 @@ function createRestClient() {
       onRateLimit: (retryAfter, options, octokit, retryCount) => {
         logger.warn(
           `Rate limit atingido para ${options.method} ${options.url}. ` +
-          `Aguardando ${retryAfter}s (tentativa ${retryCount + 1}/${config.github.maxRetries})`
+            `Aguardando ${retryAfter}s (tentativa ${retryCount + 1}/${config.github.maxRetries})`
         );
         return retryCount < config.github.maxRetries;
       },
       onSecondaryRateLimit: (retryAfter, options, octokit, retryCount) => {
         logger.warn(
           `Rate limit secundário para ${options.method} ${options.url}. ` +
-          `Aguardando ${retryAfter}s`
+            `Aguardando ${retryAfter}s`
         );
         return retryCount < 1;
       },

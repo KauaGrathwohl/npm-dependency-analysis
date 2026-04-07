@@ -9,7 +9,10 @@
     "collect": "node src/index.js --phase=collect",
     "export": "node src/index.js --phase=export",
     "validate": "node src/index.js --phase=validate",
-    "lint": "eslint src/",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
     "test": "node --experimental-vm-modules node_modules/.bin/jest"
   },
   "keywords": [
@@ -24,20 +27,23 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@octokit/graphql": "^8.2.1",
-    "@octokit/rest": "^21.1.1",
-    "@octokit/throttling": "^9.4.0",
-    "commander": "^13.1.0",
-    "dotenv": "^16.5.0",
+    "@octokit/graphql": "^9.0.3",
+    "@octokit/rest": "^22.0.1",
+    "@octokit/plugin-throttling": "^11.0.3",
+    "commander": "^14.0.3",
+    "dotenv": "^17.4.1",
     "fast-csv": "^5.0.2",
-    "ora": "^8.2.0",
-    "p-limit": "^6.2.0",
+    "ora": "^9.3.0",
+    "p-limit": "^7.3.0",
     "semver": "^7.7.1",
     "winston": "^3.17.0"
   },
   "devDependencies": {
-    "eslint": "^9.24.0",
-    "jest": "^29.7.0"
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.2.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.4.0",
+    "prettier": "^3.8.1"
   },
   "engines": {
     "node": ">=18.0.0"
