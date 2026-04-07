@@ -10,7 +10,7 @@ Este projeto é parte de um Trabalho de Conclusão de Curso (TCC) em Engenharia 
 
 ### Pergunta de Pesquisa
 
-> *Como as atualizações de dependências impactam o esforço de manutenção em projetos open-source do ecossistema NPM?*
+> _Como as atualizações de dependências impactam o esforço de manutenção em projetos open-source do ecossistema NPM?_
 
 ### Objetivos Específicos
 
@@ -25,16 +25,16 @@ Este projeto é parte de um Trabalho de Conclusão de Curso (TCC) em Engenharia 
 
 Os repositórios analisados devem satisfazer **todos** os critérios abaixo:
 
-| Critério | Valor |
-|---|---|
-| Hospedagem | GitHub |
-| Linguagem | Node.js / JavaScript |
-| Arquivo obrigatório | `package.json` |
-| Gerenciador de dependências | npm |
-| Estrelas mínimas | 500 |
-| Commits mínimos | 100 |
-| Atividade recente | Último push nos últimos 12 meses |
-| Licença | Open-source |
+| Critério                    | Valor                            |
+| --------------------------- | -------------------------------- |
+| Hospedagem                  | GitHub                           |
+| Linguagem                   | Node.js / JavaScript             |
+| Arquivo obrigatório         | `package.json`                   |
+| Gerenciador de dependências | npm                              |
+| Estrelas mínimas            | 500                              |
+| Commits mínimos             | 100                              |
+| Atividade recente           | Último push nos últimos 12 meses |
+| Licença                     | Open-source                      |
 
 **Tamanho da amostra:** 50 repositórios  
 **Período de análise:** últimos 24 meses
@@ -101,14 +101,14 @@ npm-dependency-analysis/
 
 ### Padrões de Projeto Utilizados
 
-| Padrão | Onde | Justificativa |
-|---|---|---|
-| **Configuration-based** | `src/config/` | Todos os parâmetros da pesquisa (critérios de seleção, keywords, período de análise) ficam centralizados, eliminando valores hardcoded |
-| **Singleton + Facade** | `github-client.js` | Uma única instância do cliente com throttling automático. A fachada simplifica chamadas REST complexas |
-| **Strategy** | `dependency-detector.js` | Duas estratégias de detecção (keyword + file-change) aplicadas de forma complementar para reduzir falsos negativos |
-| **Pipeline** | `pipeline/index.js` | Fases sequenciais e independentes (select → collect → export) que podem ser re-executadas isoladamente |
-| **Repository** | `collectors/` | Cada coletor encapsula o acesso a dados de um domínio específico, desacoplando lógica de negócio da API |
-| **Cache-Aside** | `cache-manager.js` | Evita requisições duplicadas em re-execuções, preservando rate limit da API |
+| Padrão                  | Onde                     | Justificativa                                                                                                                          |
+| ----------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **Configuration-based** | `src/config/`            | Todos os parâmetros da pesquisa (critérios de seleção, keywords, período de análise) ficam centralizados, eliminando valores hardcoded |
+| **Singleton + Facade**  | `github-client.js`       | Uma única instância do cliente com throttling automático. A fachada simplifica chamadas REST complexas                                 |
+| **Strategy**            | `dependency-detector.js` | Duas estratégias de detecção (keyword + file-change) aplicadas de forma complementar para reduzir falsos negativos                     |
+| **Pipeline**            | `pipeline/index.js`      | Fases sequenciais e independentes (select → collect → export) que podem ser re-executadas isoladamente                                 |
+| **Repository**          | `collectors/`            | Cada coletor encapsula o acesso a dados de um domínio específico, desacoplando lógica de negócio da API                                |
+| **Cache-Aside**         | `cache-manager.js`       | Evita requisições duplicadas em re-execuções, preservando rate limit da API                                                            |
 
 ---
 
@@ -117,17 +117,20 @@ npm-dependency-analysis/
 O pipeline de coleta opera em três fases sequenciais:
 
 ### Fase 1: Seleção de Repositórios
+
 1. Consulta a GitHub Search API com filtros (linguagem, estrelas, atividade)
 2. Para cada candidato, valida: presença de `package.json`, uso de npm, contagem de commits
 3. Seleciona os primeiros 50 repositórios que atendem a todos os critérios
 
 ### Fase 2: Coleta de Dados (por repositório)
+
 1. **Detecta commits de dependência** — filtra por keywords e por mudanças em `package.json`/`package-lock.json`
 2. **Analisa mudanças de versão** — compara `package.json` entre commits e classifica updates (major/minor/patch)
 3. **Captura snapshot de dependências** — conta diretas e transitivas
 4. **Coleta métricas de manutenção** — PRs, issues e tempos de merge relacionados a dependências
 
 ### Fase 3: Exportação
+
 1. `full-dataset.json` — dataset completo com todos os detalhes
 2. `repositories-summary.csv` — visão tabular para análise estatística
 3. `dependency-changes.csv` — cada mudança individual de dependência
@@ -170,16 +173,19 @@ cp .env.example .env
 ## Execução
 
 ### Pipeline Completo
+
 ```bash
 npm start collect
 ```
 
 ### Executar Apenas Seleção de Repositórios
+
 ```bash
 npm start select
 ```
 
 ### Retomar Coleta de Repositórios Já Selecionados
+
 ```bash
 npm start resume
 # ou especificando um arquivo
@@ -187,6 +193,7 @@ npm start resume -- -f data/output/selected-repositories.json
 ```
 
 ### Validar Configuração
+
 ```bash
 npm start validate
 ```
@@ -197,13 +204,13 @@ npm start validate
 
 Após a execução completa, o diretório `data/output/` conterá:
 
-| Arquivo | Formato | Descrição |
-|---|---|---|
-| `full-dataset.json` | JSON | Dataset completo com todas as métricas e detalhes |
-| `repositories-summary.csv` | CSV | Uma linha por repositório com métricas consolidadas |
-| `dependency-changes.csv` | CSV | Uma linha por mudança de dependência individual |
-| `collection-metadata.json` | JSON | Parâmetros da coleta para reprodutibilidade |
-| `selected-repositories.json` | JSON | Lista de repositórios selecionados |
+| Arquivo                      | Formato | Descrição                                           |
+| ---------------------------- | ------- | --------------------------------------------------- |
+| `full-dataset.json`          | JSON    | Dataset completo com todas as métricas e detalhes   |
+| `repositories-summary.csv`   | CSV     | Uma linha por repositório com métricas consolidadas |
+| `dependency-changes.csv`     | CSV     | Uma linha por mudança de dependência individual     |
+| `collection-metadata.json`   | JSON    | Parâmetros da coleta para reprodutibilidade         |
+| `selected-repositories.json` | JSON    | Lista de repositórios selecionados                  |
 
 O CSV `repositories-summary.csv` contém as colunas:
 
