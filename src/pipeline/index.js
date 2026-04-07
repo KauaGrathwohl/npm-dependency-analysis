@@ -12,19 +12,6 @@ import { getRateLimit } from '../services/github-client.js';
 import config from '../config/index.js';
 import logger from '../config/logger.js';
 
-/**
- * Padrão: Pipeline
- *
- * Orquestra a execução sequencial das fases de coleta de dados:
- *   Fase 1: Seleção de repositórios
- *   Fase 2: Coleta de dados por repositório (paralelo, com limite)
- *   Fase 3: Exportação consolidada
- *
- * Cada fase é independente e pode ser re-executada isoladamente.
- * O uso de p-limit controla a concorrência para respeitar os
- * rate limits da API do GitHub.
- */
-
 function summarizeUpdates(changes) {
   const summary = { total: 0, major: 0, minor: 0, patch: 0, unknown: 0 };
 
@@ -53,11 +40,7 @@ async function collectRepositoryData(repo) {
 
   const dependencySnapshot = await collectDependencySnapshot(owner, name);
 
-  const maintenanceMetrics = await collectMaintenanceMetrics(
-    owner,
-    name,
-    depCommits.length
-  );
+  const maintenanceMetrics = await collectMaintenanceMetrics(owner, name, depCommits.length);
 
   const updateSummary = summarizeUpdates(dependencyChanges);
 
@@ -134,7 +117,7 @@ export async function runFullPipeline() {
   const rateLimit = await getRateLimit();
   logger.info(
     `Rate limit GitHub: ${rateLimit.remaining}/${rateLimit.limit} ` +
-    `(reset em ${new Date(rateLimit.reset * 1000).toLocaleTimeString()})`
+      `(reset em ${new Date(rateLimit.reset * 1000).toLocaleTimeString()})`
   );
 
   const repositories = await runPhaseSelect();
@@ -150,9 +133,7 @@ export async function runFullPipeline() {
   logger.info(`Pipeline concluído em ${elapsed} minutos`);
 
   const finalRate = await getRateLimit();
-  logger.info(
-    `Rate limit restante: ${finalRate.remaining}/${finalRate.limit}`
-  );
+  logger.info(`Rate limit restante: ${finalRate.remaining}/${finalRate.limit}`);
 }
 
 export default { runFullPipeline, runPhaseSelect, runPhaseCollect, runPhaseExport };

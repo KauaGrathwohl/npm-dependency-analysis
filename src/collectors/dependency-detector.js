@@ -1,20 +1,12 @@
 import githubClient from '../services/github-client.js';
 import { withCache } from '../services/cache-manager.js';
-import { diffDependencies, countDirectDependencies, countTransitiveDependencies } from '../parsers/semver-parser.js';
+import {
+  diffDependencies,
+  countDirectDependencies,
+  countTransitiveDependencies,
+} from '../parsers/semver-parser.js';
 import config from '../config/index.js';
 import logger from '../config/logger.js';
-
-/**
- * Padrão: Strategy (detecção por arquivo + detecção por keyword)
- *
- * Identifica atualizações de dependências de duas formas complementares:
- * 1. Análise de diff em package.json entre commits consecutivos
- * 2. Filtragem de commits por palavras-chave (dependabot, bump, etc.)
- *
- * A combinação reduz falsos negativos: nem todo commit de dependência
- * usa keywords padronizadas, e nem toda mudança em package.json é
- * uma atualização de dependência.
- */
 
 function matchesKeyword(message) {
   const lower = message.toLowerCase();
@@ -32,15 +24,6 @@ function isDepFileChanged(files) {
 async function getPackageJsonAtCommit(owner, repo, sha) {
   try {
     const content = await githubClient.getFileContent(owner, repo, 'package.json', sha);
-    return content ? JSON.parse(content) : null;
-  } catch {
-    return null;
-  }
-}
-
-async function getLockfileAtCommit(owner, repo, sha) {
-  try {
-    const content = await githubClient.getFileContent(owner, repo, 'package-lock.json', sha);
     return content ? JSON.parse(content) : null;
   } catch {
     return null;
@@ -140,9 +123,7 @@ export async function detectDependencyUpdates(owner, repo) {
     }
   }
 
-  logger.info(
-    `${owner}/${repo}: ${depUpdateCommits.length} commits de dependência detectados`
-  );
+  logger.info(`${owner}/${repo}: ${depUpdateCommits.length} commits de dependência detectados`);
 
   return depUpdateCommits;
 }
@@ -164,14 +145,8 @@ export async function analyzeDependencyChanges(owner, repo, depCommits) {
       const prevCommit = sortedCommits[i - 1];
       const prevPkg = await getPackageJsonAtCommit(owner, repo, prevCommit.sha);
       if (prevPkg) {
-        const depDiff = diffDependencies(
-          prevPkg.dependencies,
-          currentPkg.dependencies
-        );
-        const devDepDiff = diffDependencies(
-          prevPkg.devDependencies,
-          currentPkg.devDependencies
-        );
+        const depDiff = diffDependencies(prevPkg.dependencies, currentPkg.dependencies);
+        const devDepDiff = diffDependencies(prevPkg.devDependencies, currentPkg.devDependencies);
 
         if (depDiff.length > 0 || devDepDiff.length > 0) {
           changes.push({
@@ -194,9 +169,9 @@ export async function collectDependencySnapshot(owner, repo) {
   );
 
   const lockfile = await withCache('lockfile', `${owner}_${repo}`, () =>
-    githubClient.getFileContent(owner, repo, 'package-lock.json').then((c) =>
-      c ? JSON.parse(c) : null
-    )
+    githubClient
+      .getFileContent(owner, repo, 'package-lock.json')
+      .then((c) => (c ? JSON.parse(c) : null))
   );
 
   const directCounts = countDirectDependencies(pkg);

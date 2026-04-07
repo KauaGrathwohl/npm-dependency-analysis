@@ -7,7 +7,6 @@ import {
   runPhaseCollect,
   runPhaseExport,
 } from './pipeline/index.js';
-import { exportJSON } from './exporters/data-exporter.js';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import config from './config/index.js';
@@ -18,7 +17,7 @@ program
   .name('npm-dep-analysis')
   .description(
     'Coleta de dados para análise do impacto das atualizações de dependências ' +
-    'no esforço de manutenção em projetos open-source do ecossistema NPM'
+      'no esforço de manutenção em projetos open-source do ecossistema NPM'
   )
   .version('1.0.0');
 

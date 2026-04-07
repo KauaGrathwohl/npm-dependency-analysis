@@ -8,13 +8,6 @@ const ROOT_DIR = resolve(__dirname, '..', '..');
 
 dotenvConfig({ path: resolve(ROOT_DIR, '.env') });
 
-/**
- * Configuração central do projeto.
- *
- * Padrão: Configuration-based behavior — todos os parâmetros
- * ajustáveis da pesquisa ficam centralizados aqui, evitando
- * valores "mágicos" espalhados pelo código.
- */
 const config = Object.freeze({
   github: {
     token: process.env.GITHUB_TOKEN,
@@ -63,9 +56,7 @@ const config = Object.freeze({
 
 export function validateConfig() {
   if (!config.github.token) {
-    throw new Error(
-      'GITHUB_TOKEN não definido. Crie um arquivo .env baseado em .env.example.'
-    );
+    throw new Error('GITHUB_TOKEN não definido. Crie um arquivo .env baseado em .env.example.');
   }
 }
 

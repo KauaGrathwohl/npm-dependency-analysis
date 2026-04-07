@@ -3,14 +3,6 @@ import { resolve } from 'path';
 import config from '../config/index.js';
 import logger from '../config/logger.js';
 
-/**
- * Cache em disco para respostas da API.
- *
- * Em coletas de 50 repositórios com centenas de commits cada,
- * re-execuções parciais são inevitáveis (timeout, falha de rede, etc.).
- * O cache evita requisições duplicadas e preserva o rate limit.
- */
-
 const CACHE_DIR = config.paths.cache;
 
 function ensureCacheDir() {

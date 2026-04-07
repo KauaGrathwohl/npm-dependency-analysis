@@ -3,15 +3,6 @@ import { withCache } from '../services/cache-manager.js';
 import config from '../config/index.js';
 import logger from '../config/logger.js';
 
-/**
- * Padrão: Repository (coleta) + Strategy (filtros compostos)
- *
- * Responsável por descobrir e validar repositórios que atendem
- * a todos os critérios de seleção definidos na pesquisa.
- * Cada critério é uma função de filtro independente, facilitando
- * ajustes futuros nos parâmetros da amostra.
- */
-
 function buildSearchQuery() {
   const cutoffDate = new Date();
   cutoffDate.setMonth(cutoffDate.getMonth() - config.research.maxInactivityMonths);
@@ -55,30 +46,6 @@ async function usesNpm(owner, repo) {
   }
 
   return true;
-}
-
-async function meetsCommitThreshold(owner, repo) {
-  const repoData = await withCache('repos', `${owner}_${repo}`, () =>
-    githubClient.getRepository(owner, repo)
-  );
-
-  // GitHub não expõe contagem de commits diretamente;
-  // usamos o contributors endpoint como proxy rápida.
-  // Se o repositório tem >=100 commits, o número de participantes
-  // e a atividade confirmam indiretamente.
-  // Para precisão, verificamos via listCommits paginado.
-  try {
-    const commits = await githubClient.listCommits(owner, repo, {
-      perPage: 1,
-      page: 100,
-    });
-    return true;
-  } catch (error) {
-    if (error.status === 409 || error.status === 422) {
-      return false;
-    }
-    throw error;
-  }
 }
 
 async function validateRepository(repoData) {
@@ -140,9 +107,7 @@ export async function selectRepositories(targetCount = config.research.sampleSiz
   const maxPages = 20;
 
   while (selected.length < targetCount && page <= maxPages) {
-    logger.info(
-      `Buscando página ${page} (${selected.length}/${targetCount} selecionados)`
-    );
+    logger.info(`Buscando página ${page} (${selected.length}/${targetCount} selecionados)`);
 
     const results = await withCache('search', `repos_page_${page}`, () =>
       githubClient.searchRepositories(query, perPage, page)
@@ -171,9 +136,7 @@ export async function selectRepositories(targetCount = config.research.sampleSiz
           logger.info(`[${selected.length}/${targetCount}] Selecionado: ${repo.full_name}`);
         } else {
           rejected.push(validation);
-          logger.debug(
-            `Rejeitado: ${repo.full_name} — ${validation.reasons.join(', ')}`
-          );
+          logger.debug(`Rejeitado: ${repo.full_name} — ${validation.reasons.join(', ')}`);
         }
       } catch (error) {
         logger.error(`Erro ao validar ${repo.full_name}: ${error.message}`);

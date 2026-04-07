@@ -18,8 +18,8 @@ const logger = winston.createLogger({
     new winston.transports.Console({
       format: winston.format.combine(
         winston.format.colorize(),
-        winston.format.printf(({ timestamp, level, message }) =>
-          `${timestamp} ${level}: ${message}`
+        winston.format.printf(
+          ({ timestamp, level, message }) => `${timestamp} ${level}: ${message}`
         )
       ),
     }),

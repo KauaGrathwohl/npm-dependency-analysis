@@ -1,16 +1,8 @@
-import { writeFileSync, mkdirSync, existsSync } from 'fs';
+import { writeFileSync, mkdirSync } from 'fs';
 import { resolve } from 'path';
 import { writeToPath } from 'fast-csv';
 import config from '../config/index.js';
 import logger from '../config/logger.js';
-
-/**
- * Padrão: Strategy (múltiplos formatos de exportação)
- *
- * Exporta os dados coletados em JSON e CSV.
- * JSON preserva a estrutura completa para análises programáticas.
- * CSV permite importação direta em ferramentas estatísticas (R, SPSS, Excel).
- */
 
 function ensureOutputDir() {
   mkdirSync(config.paths.output, { recursive: true });
@@ -41,13 +33,6 @@ export function exportCSV(rows, filename, headers) {
   });
 }
 
-/**
- * Exporta o dataset consolidado do projeto.
- * Gera três artefatos principais:
- *   1. repositories-summary.csv — visão tabular para análise estatística
- *   2. full-dataset.json — dataset completo com detalhes
- *   3. dependency-changes.csv — mudanças de dependências individuais
- */
 export async function exportDataset(collectedData) {
   ensureOutputDir();
 
@@ -65,8 +50,10 @@ export async function exportDataset(collectedData) {
     patch_updates: repo.updateSummary?.patch ?? 0,
     dep_pull_requests: repo.maintenanceMetrics?.pullRequests?.dependencyPRs ?? 0,
     merged_dep_prs: repo.maintenanceMetrics?.pullRequests?.mergedDependencyPRs ?? 0,
-    avg_merge_time_hours: repo.maintenanceMetrics?.pullRequests?.avgMergeTimeHours?.toFixed(2) ?? '',
-    median_merge_time_hours: repo.maintenanceMetrics?.pullRequests?.medianMergeTimeHours?.toFixed(2) ?? '',
+    avg_merge_time_hours:
+      repo.maintenanceMetrics?.pullRequests?.avgMergeTimeHours?.toFixed(2) ?? '',
+    median_merge_time_hours:
+      repo.maintenanceMetrics?.pullRequests?.medianMergeTimeHours?.toFixed(2) ?? '',
     dep_issues: repo.maintenanceMetrics?.issues?.dependencyIssues ?? 0,
     total_issues: repo.maintenanceMetrics?.issues?.totalIssues ?? 0,
     total_prs: repo.maintenanceMetrics?.pullRequests?.totalPRs ?? 0,

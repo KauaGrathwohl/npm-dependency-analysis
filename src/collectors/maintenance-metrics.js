@@ -3,23 +3,21 @@ import { withCache } from '../services/cache-manager.js';
 import config from '../config/index.js';
 import logger from '../config/logger.js';
 
-/**
- * Padrão: Service (coleta de métricas de esforço de manutenção)
- *
- * Coleta os quatro indicadores de esforço de manutenção definidos
- * na metodologia da pesquisa:
- *   1. Commits relacionados a atualizações de dependências
- *   2. Pull requests envolvendo dependências
- *   3. Issues sobre problemas de dependências
- *   4. Tempo médio de merge de PRs de dependências
- */
-
 const DEP_KEYWORDS = config.detection.commitKeywords;
 const ISSUE_KEYWORDS = [
-  'dependency', 'dependencies', 'dependência', 'dependências',
-  'package', 'npm', 'node_modules',
-  'vulnerability', 'vulnerabilidade', 'CVE',
-  'outdated', 'deprecated', 'breaking change',
+  'dependency',
+  'dependencies',
+  'dependência',
+  'dependências',
+  'package',
+  'npm',
+  'node_modules',
+  'vulnerability',
+  'vulnerabilidade',
+  'CVE',
+  'outdated',
+  'deprecated',
+  'breaking change',
   ...DEP_KEYWORDS,
 ];
 
@@ -73,9 +71,7 @@ export async function collectPullRequestMetrics(owner, repo) {
     githubClient.listPullRequests(owner, repo, 'all')
   );
 
-  const filteredPRs = prs.filter(
-    (pr) => new Date(pr.created_at) >= since
-  );
+  const filteredPRs = prs.filter((pr) => new Date(pr.created_at) >= since);
 
   const depPRs = filteredPRs.filter(isDependencyPR);
   const mergedDepPRs = depPRs.filter((pr) => pr.merged_at);
@@ -85,24 +81,20 @@ export async function collectPullRequestMetrics(owner, repo) {
     .filter((t) => t !== null);
 
   const avgMergeTimeHours =
-    mergeTimes.length > 0
-      ? mergeTimes.reduce((sum, t) => sum + t, 0) / mergeTimes.length
-      : null;
+    mergeTimes.length > 0 ? mergeTimes.reduce((sum, t) => sum + t, 0) / mergeTimes.length : null;
 
   const medianMergeTimeHours =
     mergeTimes.length > 0
       ? (() => {
           const sorted = [...mergeTimes].sort((a, b) => a - b);
           const mid = Math.floor(sorted.length / 2);
-          return sorted.length % 2 !== 0
-            ? sorted[mid]
-            : (sorted[mid - 1] + sorted[mid]) / 2;
+          return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
         })()
       : null;
 
   logger.info(
     `${owner}/${repo}: ${depPRs.length} PRs de dependência ` +
-    `(${mergedDepPRs.length} merged, avg merge: ${avgMergeTimeHours?.toFixed(1) ?? 'N/A'}h)`
+      `(${mergedDepPRs.length} merged, avg merge: ${avgMergeTimeHours?.toFixed(1) ?? 'N/A'}h)`
   );
 
   return {

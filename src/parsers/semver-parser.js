@@ -1,21 +1,12 @@
 import semver from 'semver';
 import logger from '../config/logger.js';
 
-/**
- * Classificação de atualizações de dependências via versionamento semântico.
- *
- * Compara duas versões (anterior e atual) de uma dependência e determina
- * se a mudança foi major, minor ou patch, segundo a especificação SemVer 2.0.
- */
-
 export function classifyUpdate(previousVersion, currentVersion) {
   const prev = semver.coerce(previousVersion);
   const curr = semver.coerce(currentVersion);
 
   if (!prev || !curr) {
-    logger.debug(
-      `Versão não parseável: "${previousVersion}" → "${currentVersion}"`
-    );
+    logger.debug(`Versão não parseável: "${previousVersion}" → "${currentVersion}"`);
     return 'unknown';
   }
 
@@ -26,19 +17,12 @@ export function classifyUpdate(previousVersion, currentVersion) {
   return 'none';
 }
 
-/**
- * Compara dois objetos de dependências (chave: pacote, valor: versão)
- * e retorna uma lista de mudanças detectadas.
- */
 export function diffDependencies(previous, current) {
   const changes = [];
 
   if (!previous || !current) return changes;
 
-  const allPackages = new Set([
-    ...Object.keys(previous),
-    ...Object.keys(current),
-  ]);
+  const allPackages = new Set([...Object.keys(previous), ...Object.keys(current)]);
 
   for (const pkg of allPackages) {
     const prevVersion = previous[pkg];
@@ -74,26 +58,17 @@ export function diffDependencies(previous, current) {
   return changes;
 }
 
-/**
- * Conta dependências diretas e devDependencies a partir de um package.json parseado.
- */
 export function countDirectDependencies(packageJson) {
   const deps = Object.keys(packageJson.dependencies || {}).length;
   const devDeps = Object.keys(packageJson.devDependencies || {}).length;
   return { dependencies: deps, devDependencies: devDeps, total: deps + devDeps };
 }
 
-/**
- * Conta dependências transitivas a partir de um package-lock.json parseado.
- * Dependências transitivas = total no lockfile − diretas no package.json.
- */
 export function countTransitiveDependencies(lockfileJson, packageJson) {
   let lockfileTotal = 0;
 
   if (lockfileJson.packages) {
-    lockfileTotal = Object.keys(lockfileJson.packages).filter(
-      (key) => key !== ''
-    ).length;
+    lockfileTotal = Object.keys(lockfileJson.packages).filter((key) => key !== '').length;
   } else if (lockfileJson.dependencies) {
     lockfileTotal = Object.keys(lockfileJson.dependencies).length;
   }
