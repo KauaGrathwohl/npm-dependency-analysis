@@ -6,9 +6,9 @@
   "type": "module",
   "scripts": {
     "start": "node src/index.js",
-    "collect": "node src/index.js --phase=collect",
-    "export": "node src/index.js --phase=export",
-    "validate": "node src/index.js --phase=validate",
+    "collect": "node src/index.js collect",
+    "export": "node src/index.js export",
+    "validate": "node src/index.js validate",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier . --write",
