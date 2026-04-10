@@ -37,7 +37,7 @@ Os repositórios analisados devem satisfazer **todos** os critérios abaixo:
 | Licença                     | Open-source                      |
 
 **Tamanho da amostra:** 50 repositórios  
-**Período de análise:** últimos 24 meses
+**Período de análise:** últimos 12 meses
 
 ---
 
@@ -239,7 +239,7 @@ median_merge_time_hours, dep_issues, total_issues, total_prs
 2. **Detecção por keywords:** commits de dependência sem mensagens padronizadas podem não ser capturados pela estratégia de keywords
 3. **Dependências transitivas:** a precisão depende da presença e versão do `package-lock.json` no repositório
 4. **Monorepos:** repositórios com múltiplos `package.json` (workspaces) podem ter contagem parcial de dependências
-5. **Contexto temporal:** a análise é limitada ao período de 24 meses, não capturando padrões de longo prazo
+5. **Contexto temporal:** a análise é limitada ao período de 12 meses, não capturando padrões de longo prazo
 6. **Falsos positivos:** issues/PRs classificados por keywords podem incluir menções incidentais a dependências
 
 ---

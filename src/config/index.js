@@ -18,7 +18,7 @@ const config = Object.freeze({
 
   research: {
     sampleSize: 50,
-    analysisMonths: 24,
+    analysisMonths: 12,
     minStars: 500,
     minCommits: 100,
     maxInactivityMonths: 12,
