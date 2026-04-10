@@ -10,15 +10,19 @@ function ensureOutputDir() {
 
 export function exportJSON(data, filename) {
   ensureOutputDir();
+
   const filePath = resolve(config.paths.output, `${filename}.json`);
+
   writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
   logger.info(`Exportado JSON: ${filePath}`);
+
   return filePath;
 }
 
 export function exportCSV(rows, filename, headers) {
   return new Promise((resolvePromise, reject) => {
     ensureOutputDir();
+
     const filePath = resolve(config.paths.output, `${filename}.csv`);
 
     writeToPath(filePath, rows, { headers: headers || true })
@@ -35,7 +39,6 @@ export function exportCSV(rows, filename, headers) {
 
 export async function exportDataset(collectedData) {
   ensureOutputDir();
-
   exportJSON(collectedData, 'full-dataset');
 
   const summaryRows = collectedData.map((repo) => ({
@@ -79,6 +82,7 @@ export async function exportDataset(collectedData) {
   ]);
 
   const changeRows = [];
+
   for (const repo of collectedData) {
     for (const change of repo.dependencyChanges || []) {
       for (const dep of [...(change.dependencies || []), ...(change.devDependencies || [])]) {
@@ -109,14 +113,13 @@ export async function exportDataset(collectedData) {
     ]);
   }
 
-  const metadata = {
+  exportJSON({
     collectionDate: new Date().toISOString(),
     analysisMonths: config.research.analysisMonths,
     sampleSize: collectedData.length,
     selectionCriteria: config.research,
     detectionConfig: config.detection,
-  };
-  exportJSON(metadata, 'collection-metadata');
+  }, 'collection-metadata');
 
   logger.info(`Dataset exportado com sucesso para ${config.paths.output}`);
 }

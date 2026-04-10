@@ -23,7 +23,9 @@ const ISSUE_KEYWORDS = [
 
 function textMatchesKeywords(text, keywords) {
   if (!text) return false;
+
   const lower = text.toLowerCase();
+
   return keywords.some((kw) => lower.includes(kw.toLowerCase()));
 }
 
@@ -56,16 +58,18 @@ function isDependencyIssue(issue) {
 
 function calculateMergeTimeHours(createdAt, mergedAt) {
   if (!createdAt || !mergedAt) return null;
+
   const created = new Date(createdAt);
   const merged = new Date(mergedAt);
+
   return (merged - created) / (1000 * 60 * 60);
 }
 
 export async function collectPullRequestMetrics(owner, repo) {
-  logger.info(`Coletando métricas de PRs para ${owner}/${repo}...`);
-
   const since = new Date();
   since.setMonth(since.getMonth() - config.research.analysisMonths);
+
+  logger.info(`Coletando métricas de PRs para ${owner}/${repo}...`);
 
   const prs = await withCache('pull-requests', `${owner}_${repo}`, () =>
     githubClient.listPullRequests(owner, repo, 'all')
@@ -86,15 +90,15 @@ export async function collectPullRequestMetrics(owner, repo) {
   const medianMergeTimeHours =
     mergeTimes.length > 0
       ? (() => {
-          const sorted = [...mergeTimes].sort((a, b) => a - b);
-          const mid = Math.floor(sorted.length / 2);
-          return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-        })()
+        const sorted = [...mergeTimes].sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+      })()
       : null;
 
   logger.info(
     `${owner}/${repo}: ${depPRs.length} PRs de dependência ` +
-      `(${mergedDepPRs.length} merged, avg merge: ${avgMergeTimeHours?.toFixed(1) ?? 'N/A'}h)`
+    `(${mergedDepPRs.length} merged, avg merge: ${avgMergeTimeHours?.toFixed(1) ?? 'N/A'}h)`
   );
 
   return {
@@ -118,10 +122,10 @@ export async function collectPullRequestMetrics(owner, repo) {
 }
 
 export async function collectIssueMetrics(owner, repo) {
-  logger.info(`Coletando métricas de issues para ${owner}/${repo}...`);
-
   const since = new Date();
   since.setMonth(since.getMonth() - config.research.analysisMonths);
+
+  logger.info(`Coletando métricas de issues para ${owner}/${repo}...`);
 
   const issues = await withCache('issues', `${owner}_${repo}`, () =>
     githubClient.listIssues(owner, repo, { state: 'all', since: since.toISOString() })

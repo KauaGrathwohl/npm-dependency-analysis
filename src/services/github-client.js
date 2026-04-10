@@ -19,15 +19,17 @@ function createRestClient() {
       onRateLimit: (retryAfter, options, octokit, retryCount) => {
         logger.warn(
           `Rate limit atingido para ${options.method} ${options.url}. ` +
-            `Aguardando ${retryAfter}s (tentativa ${retryCount + 1}/${config.github.maxRetries})`
+          `Aguardando ${retryAfter}s (tentativa ${retryCount + 1}/${config.github.maxRetries})`
         );
+
         return retryCount < config.github.maxRetries;
       },
       onSecondaryRateLimit: (retryAfter, options, octokit, retryCount) => {
         logger.warn(
           `Rate limit secundário para ${options.method} ${options.url}. ` +
-            `Aguardando ${retryAfter}s`
+          `Aguardando ${retryAfter}s`
         );
+
         return retryCount < 1;
       },
     },
@@ -57,30 +59,35 @@ export async function searchRepositories(query, perPage = 30, page = 1) {
     per_page: perPage,
     page,
   });
+
   return response.data;
 }
 
 export async function getRepository(owner, repo) {
   const client = createRestClient();
   const response = await client.repos.get({ owner, repo });
+
   return response.data;
 }
 
 export async function getFileContent(owner, repo, path, ref = undefined) {
   const client = createRestClient();
+
   try {
     const response = await client.repos.getContent({ owner, repo, path, ref });
     const content = Buffer.from(response.data.content, 'base64').toString('utf-8');
+
     return content;
   } catch (error) {
     if (error.status === 404) return null;
+
     throw error;
   }
 }
 
 export async function listCommits(owner, repo, options = {}) {
   const client = createRestClient();
-  const params = {
+  const response = await client.repos.listCommits({
     owner,
     repo,
     per_page: options.perPage || 100,
@@ -88,8 +95,8 @@ export async function listCommits(owner, repo, options = {}) {
     ...(options.until && { until: options.until }),
     ...(options.path && { path: options.path }),
     ...(options.page && { page: options.page }),
-  };
-  const response = await client.repos.listCommits(params);
+  });
+
   return response.data;
 }
 
@@ -100,6 +107,7 @@ export async function listCommits(owner, repo, options = {}) {
 export async function paginateAll(method, params) {
   const client = createRestClient();
   const results = [];
+
   let page = 1;
   let hasMore = true;
 
@@ -109,7 +117,9 @@ export async function paginateAll(method, params) {
       per_page: 100,
       page,
     });
+
     results.push(...response.data);
+
     hasMore = response.data.length === 100;
     page++;
   }
@@ -119,6 +129,7 @@ export async function paginateAll(method, params) {
 
 export async function listPullRequests(owner, repo, state = 'all') {
   const client = createRestClient();
+
   return client.paginate(client.pulls.list, {
     owner,
     repo,
@@ -129,6 +140,7 @@ export async function listPullRequests(owner, repo, state = 'all') {
 
 export async function listIssues(owner, repo, options = {}) {
   const client = createRestClient();
+
   return client.paginate(client.issues.listForRepo, {
     owner,
     repo,
@@ -141,17 +153,20 @@ export async function listIssues(owner, repo, options = {}) {
 export async function getCommitDetail(owner, repo, sha) {
   const client = createRestClient();
   const response = await client.repos.getCommit({ owner, repo, ref: sha });
+
   return response.data;
 }
 
 export async function graphqlQuery(query, variables = {}) {
   const client = createGraphQLClient();
+
   return client(query, variables);
 }
 
 export async function getRateLimit() {
   const client = createRestClient();
   const response = await client.rateLimit.get();
+
   return response.data.rate;
 }
 

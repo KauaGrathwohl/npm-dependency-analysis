@@ -10,6 +10,7 @@ import logger from '../config/logger.js';
 
 function matchesKeyword(message) {
   const lower = message.toLowerCase();
+
   return config.detection.commitKeywords.some((kw) => lower.includes(kw.toLowerCase()));
 }
 
@@ -24,6 +25,7 @@ function isDepFileChanged(files) {
 async function getPackageJsonAtCommit(owner, repo, sha) {
   try {
     const content = await githubClient.getFileContent(owner, repo, 'package.json', sha);
+
     return content ? JSON.parse(content) : null;
   } catch {
     return null;
@@ -31,14 +33,15 @@ async function getPackageJsonAtCommit(owner, repo, sha) {
 }
 
 export async function detectDependencyUpdates(owner, repo) {
-  logger.info(`Detectando atualizações de dependências em ${owner}/${repo}...`);
-
   const since = new Date();
   since.setMonth(since.getMonth() - config.research.analysisMonths);
+
+  logger.info(`Detectando atualizações de dependências em ${owner}/${repo}...`);
 
   const cacheKey = `${owner}_${repo}_dep_commits`;
   const commits = await withCache('commits', cacheKey, async () => {
     const allCommits = [];
+
     let page = 1;
     let hasMore = true;
 
@@ -48,7 +51,9 @@ export async function detectDependencyUpdates(owner, repo) {
         perPage: 100,
         page,
       });
+
       allCommits.push(...batch);
+
       hasMore = batch.length === 100;
       page++;
 
@@ -72,6 +77,7 @@ export async function detectDependencyUpdates(owner, repo) {
     if (!isKeywordMatch) continue;
 
     let detail;
+
     try {
       detail = await withCache('commit-detail', `${owner}_${repo}_${commit.sha}`, () =>
         githubClient.getCommitDetail(owner, repo, commit.sha)
@@ -101,6 +107,7 @@ export async function detectDependencyUpdates(owner, repo) {
     if (matchesKeyword(message)) continue;
 
     let detail;
+
     try {
       detail = await withCache('commit-detail', `${owner}_${repo}_${commit.sha}`, () =>
         githubClient.getCommitDetail(owner, repo, commit.sha)
@@ -139,11 +146,13 @@ export async function analyzeDependencyChanges(owner, repo, depCommits) {
   for (let i = 0; i < sortedCommits.length; i++) {
     const commit = sortedCommits[i];
     const currentPkg = await getPackageJsonAtCommit(owner, repo, commit.sha);
+
     if (!currentPkg) continue;
 
     if (i > 0) {
       const prevCommit = sortedCommits[i - 1];
       const prevPkg = await getPackageJsonAtCommit(owner, repo, prevCommit.sha);
+
       if (prevPkg) {
         const depDiff = diffDependencies(prevPkg.dependencies, currentPkg.dependencies);
         const devDepDiff = diffDependencies(prevPkg.devDependencies, currentPkg.devDependencies);

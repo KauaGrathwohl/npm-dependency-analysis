@@ -6,6 +6,7 @@ mkdirSync(config.paths.logs, { recursive: true });
 
 const logger = winston.createLogger({
   level: config.logging.level,
+
   format: winston.format.combine(
     winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
     winston.format.errors({ stack: true }),
@@ -14,6 +15,7 @@ const logger = winston.createLogger({
       return stack ? `${base}\n${stack}` : base;
     })
   ),
+
   transports: [
     new winston.transports.Console({
       format: winston.format.combine(

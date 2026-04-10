@@ -61,6 +61,7 @@ export function diffDependencies(previous, current) {
 export function countDirectDependencies(packageJson) {
   const deps = Object.keys(packageJson.dependencies || {}).length;
   const devDeps = Object.keys(packageJson.devDependencies || {}).length;
+
   return { dependencies: deps, devDependencies: devDeps, total: deps + devDeps };
 }
 

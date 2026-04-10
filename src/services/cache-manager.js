@@ -12,12 +12,15 @@ function ensureCacheDir() {
 function keyToPath(namespace, key) {
   const safeKey = key.replace(/[^a-zA-Z0-9_-]/g, '_');
   const nsDir = resolve(CACHE_DIR, namespace);
+
   mkdirSync(nsDir, { recursive: true });
+
   return resolve(nsDir, `${safeKey}.json`);
 }
 
 export function getCached(namespace, key) {
   const filePath = keyToPath(namespace, key);
+
   if (!existsSync(filePath)) return null;
 
   try {
@@ -26,6 +29,7 @@ export function getCached(namespace, key) {
 
     const ageMs = Date.now() - entry.timestamp;
     const maxAgeMs = 24 * 60 * 60 * 1000; // 24h
+
     if (ageMs > maxAgeMs) {
       logger.debug(`Cache expirado para ${namespace}/${key}`);
       return null;
@@ -39,21 +43,26 @@ export function getCached(namespace, key) {
 
 export function setCache(namespace, key, data) {
   ensureCacheDir();
+
   const filePath = keyToPath(namespace, key);
   const entry = { timestamp: Date.now(), data };
+
   writeFileSync(filePath, JSON.stringify(entry, null, 2), 'utf-8');
 }
 
 export async function withCache(namespace, key, fetchFn) {
   const cached = getCached(namespace, key);
+
   if (cached !== null) {
     logger.debug(`Cache hit: ${namespace}/${key}`);
     return cached;
   }
 
   logger.debug(`Cache miss: ${namespace}/${key}`);
+
   const data = await fetchFn();
   setCache(namespace, key, data);
+
   return data;
 }
 

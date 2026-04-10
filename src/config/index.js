@@ -56,7 +56,7 @@ const config = Object.freeze({
 
 export function validateConfig() {
   if (!config.github.token) {
-    throw new Error('GITHUB_TOKEN não definido. Crie um arquivo .env baseado em .env.example.');
+    throw new Error('GITHUB_TOKEN não definido no arquivo .env');
   }
 }
 

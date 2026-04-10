@@ -6,6 +6,7 @@ import logger from '../config/logger.js';
 function buildSearchQuery() {
   const cutoffDate = new Date();
   cutoffDate.setMonth(cutoffDate.getMonth() - config.research.maxInactivityMonths);
+
   const pushed = cutoffDate.toISOString().split('T')[0];
 
   return [
@@ -19,6 +20,7 @@ function buildSearchQuery() {
 
 async function hasPackageJson(owner, repo) {
   const content = await githubClient.getFileContent(owner, repo, 'package.json');
+
   return content !== null;
 }
 
@@ -74,24 +76,28 @@ async function validateRepository(repoData) {
 
   const cutoff = new Date();
   cutoff.setMonth(cutoff.getMonth() - config.research.maxInactivityMonths);
+
   if (new Date(pushed_at) < cutoff) {
     validationResult.reasons.push('inativo há mais de 12 meses');
     return validationResult;
   }
 
   const hasFile = await hasPackageJson(ownerLogin, name);
+
   if (!hasFile) {
     validationResult.reasons.push('sem package.json');
     return validationResult;
   }
 
   const npm = await usesNpm(ownerLogin, name);
+
   if (!npm) {
     validationResult.reasons.push('não usa npm como gerenciador');
     return validationResult;
   }
 
   validationResult.valid = true;
+
   return validationResult;
 }
 
@@ -102,9 +108,10 @@ export async function selectRepositories(targetCount = config.research.sampleSiz
 
   const selected = [];
   const rejected = [];
-  let page = 1;
   const perPage = 30;
   const maxPages = 20;
+
+  let page = 1;
 
   while (selected.length < targetCount && page <= maxPages) {
     logger.info(`Buscando página ${page} (${selected.length}/${targetCount} selecionados)`);
@@ -123,6 +130,7 @@ export async function selectRepositories(targetCount = config.research.sampleSiz
 
       try {
         const validation = await validateRepository(repo);
+
         if (validation.valid) {
           selected.push({
             fullName: repo.full_name,
@@ -133,6 +141,7 @@ export async function selectRepositories(targetCount = config.research.sampleSiz
             pushedAt: repo.pushed_at,
             description: repo.description,
           });
+
           logger.info(`[${selected.length}/${targetCount}] Selecionado: ${repo.full_name}`);
         } else {
           rejected.push(validation);
