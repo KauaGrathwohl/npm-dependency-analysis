@@ -34,13 +34,12 @@ async function collectRepositoryData(repo) {
   const { owner, name, fullName } = repo;
   logger.info(`\n${'='.repeat(60)}\nProcessando: ${fullName}\n${'='.repeat(60)}`);
 
-  const depCommits = await detectDependencyUpdates(owner, name);
-
-  const dependencyChanges = await analyzeDependencyChanges(owner, name, depCommits);
-
-  const dependencySnapshot = await collectDependencySnapshot(owner, name);
-
-  const maintenanceMetrics = await collectMaintenanceMetrics(owner, name, depCommits.length);
+  const [depCommits, dependencyChanges, dependencySnapshot, maintenanceMetrics] = await Promise.all([
+    detectDependencyUpdates(owner, name),
+    analyzeDependencyChanges(owner, name),
+    collectDependencySnapshot(owner, name),
+    collectMaintenanceMetrics(owner, name),
+  ]);
 
   const updateSummary = summarizeUpdates(dependencyChanges);
 
@@ -117,7 +116,7 @@ export async function runFullPipeline() {
   const rateLimit = await getRateLimit();
   logger.info(
     `Rate limit GitHub: ${rateLimit.remaining}/${rateLimit.limit} ` +
-      `(reset em ${new Date(rateLimit.reset * 1000).toLocaleTimeString()})`
+    `(reset em ${new Date(rateLimit.reset * 1000).toLocaleTimeString()})`
   );
 
   const repositories = await runPhaseSelect();
