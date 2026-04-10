@@ -72,7 +72,7 @@ export async function collectPullRequestMetrics(owner, repo) {
   logger.info(`Coletando métricas de PRs para ${owner}/${repo}...`);
 
   const prs = await withCache('pull-requests', `${owner}_${repo}`, () =>
-    githubClient.listPullRequests(owner, repo, 'all')
+    githubClient.listPullRequests(owner, repo, { state: 'all', since: since.toISOString() })
   );
 
   const filteredPRs = prs.filter((pr) => new Date(pr.created_at) >= since);

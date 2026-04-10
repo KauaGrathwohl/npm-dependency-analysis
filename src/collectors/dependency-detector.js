@@ -22,6 +22,34 @@ function isDepFileChanged(files) {
   );
 }
 
+async function listCommitsByPath(owner, repo, path, sinceISO) {
+  const allCommits = [];
+
+  let page = 1;
+  let hasMore = true;
+
+  while (hasMore) {
+    const batch = await githubClient.listCommits(owner, repo, {
+      since: sinceISO,
+      path,
+      perPage: 100,
+      page,
+    });
+
+    allCommits.push(...batch);
+
+    hasMore = batch.length === 100;
+    page++;
+
+    if (page > 50) {
+      logger.warn(`${owner}/${repo}: limite de 5000 commits por arquivo atingido para ${path}`);
+      break;
+    }
+  }
+
+  return allCommits;
+}
+
 async function getPackageJsonAtCommit(owner, repo, sha) {
   try {
     const content = await githubClient.getFileContent(owner, repo, 'package.json', sha);
@@ -68,27 +96,47 @@ export async function detectDependencyUpdates(owner, repo) {
 
   logger.info(`${owner}/${repo}: ${commits.length} commits no período de análise`);
 
+  const depFileCommitShas = new Set();
+
+  for (const targetFile of config.detection.targetFiles) {
+    const pathCacheKey = `${owner}_${repo}_${targetFile}_commits`;
+
+    const commitsByPath = await withCache('dep-file-commits', pathCacheKey, () =>
+      listCommitsByPath(owner, repo, targetFile, since.toISOString())
+    );
+
+    for (const commit of commitsByPath) {
+      depFileCommitShas.add(commit.sha);
+    }
+  }
+
   const depUpdateCommits = [];
 
   for (const commit of commits) {
     const message = commit.commit?.message || '';
     const isKeywordMatch = matchesKeyword(message);
 
-    if (!isKeywordMatch) continue;
+    let touchesDepFile = depFileCommitShas.has(commit.sha);
+    let filesChanged = [];
 
-    let detail;
+    if (!isKeywordMatch && !touchesDepFile) continue;
 
-    try {
-      detail = await withCache('commit-detail', `${owner}_${repo}_${commit.sha}`, () =>
-        githubClient.getCommitDetail(owner, repo, commit.sha)
-      );
-    } catch (error) {
-      logger.debug(`Erro ao obter detalhes do commit ${commit.sha}: ${error.message}`);
-      continue;
+    // Para commits capturados apenas por keyword, consulta detalhes para reduzir
+    // falsos positivos e preservar suporte a package.json em subpastas.
+    if (isKeywordMatch && !touchesDepFile) {
+      try {
+        const detail = await withCache('commit-detail', `${owner}_${repo}_${commit.sha}`, () =>
+          githubClient.getCommitDetail(owner, repo, commit.sha)
+        );
+
+        const files = detail.files || [];
+
+        touchesDepFile = isDepFileChanged(files);
+        filesChanged = files.map((f) => f.filename);
+      } catch (error) {
+        logger.debug(`Erro ao obter detalhes do commit ${commit.sha}: ${error.message}`);
+      }
     }
-
-    const files = detail.files || [];
-    const touchesDepFile = isDepFileChanged(files);
 
     depUpdateCommits.push({
       sha: commit.sha,
@@ -97,37 +145,8 @@ export async function detectDependencyUpdates(owner, repo) {
       author: commit.commit.author?.name || 'unknown',
       matchedBy: isKeywordMatch ? 'keyword' : 'file-change',
       touchesDepFile,
-      filesChanged: files.map((f) => f.filename),
+      filesChanged,
     });
-  }
-
-  // Detecta também commits que alteram package.json sem keywords
-  for (const commit of commits) {
-    const message = commit.commit?.message || '';
-    if (matchesKeyword(message)) continue;
-
-    let detail;
-
-    try {
-      detail = await withCache('commit-detail', `${owner}_${repo}_${commit.sha}`, () =>
-        githubClient.getCommitDetail(owner, repo, commit.sha)
-      );
-    } catch {
-      continue;
-    }
-
-    const files = detail.files || [];
-    if (isDepFileChanged(files)) {
-      depUpdateCommits.push({
-        sha: commit.sha,
-        message: message.split('\n')[0].substring(0, 200),
-        date: commit.commit.author?.date || commit.commit.committer?.date,
-        author: commit.commit.author?.name || 'unknown',
-        matchedBy: 'file-change',
-        touchesDepFile: true,
-        filesChanged: files.map((f) => f.filename),
-      });
-    }
   }
 
   logger.info(`${owner}/${repo}: ${depUpdateCommits.length} commits de dependência detectados`);
@@ -139,19 +158,31 @@ export async function analyzeDependencyChanges(owner, repo, depCommits) {
   logger.info(`Analisando mudanças de dependência em ${owner}/${repo}...`);
 
   const changes = [];
+  const packageJsonCache = new Map();
   const sortedCommits = [...depCommits]
     .filter((c) => c.touchesDepFile)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
+  async function getCachedPackageJson(sha) {
+    if (packageJsonCache.has(sha)) {
+      return packageJsonCache.get(sha);
+    }
+
+    const pkg = await getPackageJsonAtCommit(owner, repo, sha);
+    packageJsonCache.set(sha, pkg);
+
+    return pkg;
+  }
+
   for (let i = 0; i < sortedCommits.length; i++) {
     const commit = sortedCommits[i];
-    const currentPkg = await getPackageJsonAtCommit(owner, repo, commit.sha);
+    const currentPkg = await getCachedPackageJson(commit.sha);
 
     if (!currentPkg) continue;
 
     if (i > 0) {
       const prevCommit = sortedCommits[i - 1];
-      const prevPkg = await getPackageJsonAtCommit(owner, repo, prevCommit.sha);
+      const prevPkg = await getCachedPackageJson(prevCommit.sha);
 
       if (prevPkg) {
         const depDiff = diffDependencies(prevPkg.dependencies, currentPkg.dependencies);

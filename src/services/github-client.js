@@ -127,15 +127,61 @@ export async function paginateAll(method, params) {
   return results;
 }
 
-export async function listPullRequests(owner, repo, state = 'all') {
+export async function listPullRequests(owner, repo, options = {}) {
   const client = createRestClient();
+  const state = options.state || 'all';
+  const sinceDate = options.since ? new Date(options.since) : null;
 
-  return client.paginate(client.pulls.list, {
-    owner,
-    repo,
-    state,
-    per_page: 100,
-  });
+  // Paginação manual para interromper cedo quando PRs mais antigos que o recorte
+  // temporal são alcançados.
+  const prs = [];
+  let page = 1;
+  let hasMore = true;
+
+  while (hasMore) {
+    const response = await client.pulls.list({
+      owner,
+      repo,
+      state,
+      sort: 'created',
+      direction: 'desc',
+      per_page: 100,
+      page,
+    });
+
+    const batch = response.data || [];
+
+    if (batch.length === 0) {
+      break;
+    }
+
+    if (!sinceDate) {
+      prs.push(...batch);
+    } else {
+      for (const pr of batch) {
+        if (new Date(pr.created_at) >= sinceDate) {
+          prs.push(pr);
+        }
+      }
+    }
+
+    if (batch.length < 100) {
+      hasMore = false;
+      continue;
+    }
+
+    if (sinceDate) {
+      const oldest = batch[batch.length - 1];
+      if (new Date(oldest.created_at) < sinceDate) {
+        hasMore = false;
+        continue;
+      }
+    }
+
+    page++;
+  }
+
+  return prs;
 }
 
 export async function listIssues(owner, repo, options = {}) {
