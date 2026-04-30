@@ -62,7 +62,7 @@ Os repositórios analisados devem satisfazer **todos** os critérios abaixo:
 A ferramenta identifica atualizações de dependências por duas estratégias complementares:
 
 1. **Análise de arquivos:** mudanças em `package.json` e `package-lock.json`
-2. **Análise de mensagens de commit:** palavras-chave como `chore(deps)`, `update dependency`, `bump`, `dependabot`, `renovate`
+2. **Análise de mensagens de commit:** palavras-chave como `chore(deps)`, `update dependency`, `bump`, `dependabot`
 
 ---
 
@@ -95,7 +95,6 @@ npm-dependency-analysis/
 ├── .env.example                  # Template de variáveis de ambiente
 ├── .gitignore
 ├── package.json
-├── AGENTS.md                     # Instruções de pesquisa para IA
 └── README.md
 ```
 
@@ -263,4 +262,4 @@ MIT
 
 ## Referências
 
-Este projeto está alinhado com a pesquisa descrita em `AGENTS.md` e com o artigo acadêmico em desenvolvimento. As referências bibliográficas completas estão no manuscrito do TCC.
+Este projeto está alinhado com a pesquisa descrita no artigo acadêmico em desenvolvimento (`artigo.md`). As referências bibliográficas completas estão no manuscrito do TCC.

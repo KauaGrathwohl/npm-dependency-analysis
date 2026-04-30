@@ -96,6 +96,15 @@ async function validateRepository(repoData) {
     return validationResult;
   }
 
+  const commitPage = await withCache('commit-count', `${ownerLogin}_${name}`, () =>
+    githubClient.listCommits(ownerLogin, name, { perPage: 100, page: 1 })
+  );
+
+  if (commitPage.length < config.research.minCommits) {
+    validationResult.reasons.push(`commits insuficientes: ${commitPage.length} < ${config.research.minCommits}`);
+    return validationResult;
+  }
+
   validationResult.valid = true;
 
   return validationResult;

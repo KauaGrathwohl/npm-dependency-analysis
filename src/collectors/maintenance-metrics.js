@@ -34,10 +34,10 @@ function isDependencyPR(pr) {
   const bodyMatch = textMatchesKeywords(pr.body, DEP_KEYWORDS);
 
   const labelMatch = (pr.labels || []).some((label) =>
-    textMatchesKeywords(label.name, ['dependencies', 'deps', 'dependabot', 'renovate'])
+    textMatchesKeywords(label.name, ['dependencies', 'deps', 'dependabot'])
   );
 
-  const authorMatch = ['dependabot[bot]', 'dependabot', 'renovate[bot]', 'renovate'].includes(
+  const authorMatch = ['dependabot[bot]', 'dependabot'].includes(
     pr.user?.login
   );
 

@@ -33,8 +33,6 @@ const config = Object.freeze({
       'update dependency',
       'bump',
       'dependabot',
-      'renovate',
-      'upgrade',
     ],
   },
 
