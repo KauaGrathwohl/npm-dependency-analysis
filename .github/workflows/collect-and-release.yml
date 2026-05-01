@@ -1,6 +1,7 @@
 name: Collect and release artifacts
 
 on:
+  workflow_dispatch:
   push:
     branches: ['master']
     paths:
@@ -26,6 +27,8 @@ jobs:
 
       - name: Run collect script
         run: npm run collect
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Find output directory
         id: find_output
