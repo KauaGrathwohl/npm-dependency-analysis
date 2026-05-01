@@ -51,6 +51,5 @@ jobs:
         with:
           tag: collect-${{ github.sha }}
           name: collect-${{ github.sha }}
-          files: artifacts.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          artifacts: artifacts.zip
+          token: ${{ secrets.GITHUB_TOKEN }}
