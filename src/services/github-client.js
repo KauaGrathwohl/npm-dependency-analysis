@@ -9,6 +9,42 @@ const ThrottledOctokit = Octokit.plugin(throttling);
 let restClient = null;
 let graphqlClient = null;
 
+// Delay entre requisições (ms) para evitar burst
+const BASE_DELAY = 100;
+let lastRequestTime = 0;
+
+/**
+ * Aguarda delay estratégico para não sobrecarregar rate limit
+ */
+async function applyDelay() {
+  const timeSinceLastRequest = Date.now() - lastRequestTime;
+  if (timeSinceLastRequest < BASE_DELAY) {
+    const delayMs = BASE_DELAY - timeSinceLastRequest;
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+  lastRequestTime = Date.now();
+}
+
+/**
+ * Verifica rate limit proativamente
+ */
+async function checkRateLimitThreshold() {
+  try {
+    const rate = await getRateLimit();
+    if (rate.remaining < 50) {
+      const resetDate = new Date(rate.reset * 1000);
+      const delayMs = resetDate.getTime() - Date.now();
+      logger.warn(
+        `Rate limit crítico: ${rate.remaining}/${rate.limit} requisições. ` +
+          `Aguardando reset em ${Math.ceil(delayMs / 1000)}s`
+      );
+      await new Promise((resolve) => setTimeout(resolve, delayMs + 1000));
+    }
+  } catch (error) {
+    logger.debug(`Não foi possível verificar rate limit: ${error.message}`);
+  }
+}
+
 function createRestClient() {
   if (restClient) return restClient;
 
@@ -19,7 +55,7 @@ function createRestClient() {
       onRateLimit: (retryAfter, options, octokit, retryCount) => {
         logger.warn(
           `Rate limit atingido para ${options.method} ${options.url}. ` +
-          `Aguardando ${retryAfter}s (tentativa ${retryCount + 1}/${config.github.maxRetries})`
+            `Aguardando ${retryAfter}s (tentativa ${retryCount + 1}/${config.github.maxRetries})`
         );
 
         return retryCount < config.github.maxRetries;
@@ -27,7 +63,7 @@ function createRestClient() {
       onSecondaryRateLimit: (retryAfter, options, octokit, retryCount) => {
         logger.warn(
           `Rate limit secundário para ${options.method} ${options.url}. ` +
-          `Aguardando ${retryAfter}s`
+            `Aguardando ${retryAfter}s`
         );
 
         return retryCount < 1;
@@ -51,6 +87,9 @@ function createGraphQLClient() {
 }
 
 export async function searchRepositories(query, perPage = 30, page = 1) {
+  await applyDelay();
+  await checkRateLimitThreshold();
+
   const client = createRestClient();
   const response = await client.search.repos({
     q: query,
@@ -64,6 +103,8 @@ export async function searchRepositories(query, perPage = 30, page = 1) {
 }
 
 export async function getRepository(owner, repo) {
+  await applyDelay();
+
   const client = createRestClient();
   const response = await client.repos.get({ owner, repo });
 
@@ -71,6 +112,8 @@ export async function getRepository(owner, repo) {
 }
 
 export async function getFileContent(owner, repo, path, ref = undefined) {
+  await applyDelay();
+
   const client = createRestClient();
 
   try {
@@ -86,6 +129,8 @@ export async function getFileContent(owner, repo, path, ref = undefined) {
 }
 
 export async function listCommits(owner, repo, options = {}) {
+  await applyDelay();
+
   const client = createRestClient();
   const response = await client.repos.listCommits({
     owner,
@@ -112,6 +157,8 @@ export async function paginateAll(method, params) {
   let hasMore = true;
 
   while (hasMore) {
+    await applyDelay();
+
     const response = await client.request(method, {
       ...params,
       per_page: 100,
@@ -128,6 +175,8 @@ export async function paginateAll(method, params) {
 }
 
 export async function listPullRequests(owner, repo, options = {}) {
+  await checkRateLimitThreshold();
+
   const client = createRestClient();
   const state = options.state || 'all';
   const sinceDate = options.since ? new Date(options.since) : null;
@@ -139,6 +188,8 @@ export async function listPullRequests(owner, repo, options = {}) {
   let hasMore = true;
 
   while (hasMore) {
+    await applyDelay();
+
     const response = await client.pulls.list({
       owner,
       repo,
@@ -185,6 +236,8 @@ export async function listPullRequests(owner, repo, options = {}) {
 }
 
 export async function listIssues(owner, repo, options = {}) {
+  await checkRateLimitThreshold();
+
   const client = createRestClient();
 
   return client.paginate(client.issues.listForRepo, {
@@ -197,6 +250,7 @@ export async function listIssues(owner, repo, options = {}) {
 }
 
 export async function getCommitDetail(owner, repo, sha) {
+  await applyDelay();
   const client = createRestClient();
   const response = await client.repos.getCommit({ owner, repo, ref: sha });
 
@@ -216,6 +270,114 @@ export async function getRateLimit() {
   return response.data.rate;
 }
 
+/**
+ * Query GraphQL consolidada para coletar PRs, Issues e commits em uma única requisição
+ * Economiza significativamente no rate limit comparado a 3 requisições separadas
+ */
+export async function getRepositoryMetricsGraphQL(owner, repo, dateSince = null) {
+  await applyDelay();
+
+  const query = `
+    query($owner: String!, $repo: String!, $since: DateTime) {
+      repository(owner: $owner, name: $repo) {
+        pullRequests(first: 100, orderBy: {field: CREATED_AT, direction: DESC}, after: null) {
+          totalCount
+          nodes {
+            number
+            title
+            state
+            createdAt
+            mergedAt
+            closedAt
+            author {
+              login
+            }
+            labels(first: 20) {
+              nodes {
+                name
+              }
+            }
+          }
+        }
+        issues(first: 100, orderBy: {field: CREATED_AT, direction: DESC}) {
+          totalCount
+          nodes {
+            number
+            title
+            state
+            createdAt
+            closedAt
+            labels(first: 20) {
+              nodes {
+                name
+              }
+            }
+          }
+        }
+      }
+      rateLimit {
+        remaining
+        resetAt
+      }
+    }
+  `;
+
+  const variables = {
+    owner,
+    repo,
+    ...(dateSince && { since: dateSince }),
+  };
+
+  return graphqlQuery(query, variables);
+}
+
+/**
+ * Query GraphQL para commits de forma mais eficiente
+ * Coleta commits com history de arquivo em uma única query
+ */
+export async function getCommitsGraphQL(owner, repo, dateSince = null, filePath = null) {
+  await applyDelay();
+
+  const query = `
+    query($owner: String!, $repo: String!, $since: GitTimestamp) {
+      repository(owner: $owner, name: $repo) {
+        defaultBranchRef {
+          target {
+            ... on Commit {
+              history(first: 100, since: $since${filePath ? `, path: "${filePath}"` : ''}) {
+                totalCount
+                pageInfo {
+                  hasNextPage
+                  endCursor
+                }
+                nodes {
+                  oid
+                  message
+                  committedDate
+                  author {
+                    name
+                  }
+                  changedFiles
+                  additions
+                  deletions
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const variables = {
+    owner,
+    repo,
+    ...(dateSince && { since: dateSince }),
+  };
+
+  return graphqlQuery(query, variables);
+}
+
 export default {
   searchRepositories,
   getRepository,
@@ -227,4 +389,6 @@ export default {
   graphqlQuery,
   getRateLimit,
   paginateAll,
+  getRepositoryMetricsGraphQL,
+  getCommitsGraphQL,
 };

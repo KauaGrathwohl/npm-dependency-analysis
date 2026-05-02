@@ -7,6 +7,7 @@ import {
 } from '../parsers/semver-parser.js';
 import config from '../config/index.js';
 import logger from '../config/logger.js';
+import pLimit from 'p-limit';
 
 function matchesKeyword(message) {
   const lower = message.toLowerCase();
@@ -66,22 +67,50 @@ export async function detectDependencyUpdates(owner, repo) {
 
   logger.info(`Detectando atualizações de dependências em ${owner}/${repo}...`);
 
-  const cacheKey = `${owner}_${repo}_dep_commits`;
-  const commits = await withCache('commits', cacheKey, async () => {
-    const allCommits = [];
+  const sinceISO = since.toISOString();
 
+  const limit = pLimit(2);
+
+  const depFileCommitsByPath = await Promise.all(
+    config.detection.targetFiles.map((targetFile) =>
+      limit(() =>
+        withCache('dep-file-commits', `${owner}_${repo}_${targetFile}_commits`, () =>
+          listCommitsByPath(owner, repo, targetFile, sinceISO)
+        )
+      )
+    )
+  );
+
+  // Deduplicate commits encontrados por path
+  const depFileCommitShas = new Set();
+  const depFileCommitMap = new Map();
+
+  for (const commitsByPath of depFileCommitsByPath) {
+    for (const commit of commitsByPath) {
+      if (!depFileCommitShas.has(commit.sha)) {
+        depFileCommitShas.add(commit.sha);
+        depFileCommitMap.set(commit.sha, commit);
+      }
+    }
+  }
+
+  logger.info(`${owner}/${repo}: ${depFileCommitShas.size} commits que alteraram dependências`);
+
+  // Também buscar commits com keywords de forma otimizada (com cache)
+  const cacheKey = `${owner}_${repo}_keyword_commits`;
+  const allCommits = await withCache('commits', cacheKey, async () => {
+    const result = [];
     let page = 1;
     let hasMore = true;
 
     while (hasMore) {
       const batch = await githubClient.listCommits(owner, repo, {
-        since: since.toISOString(),
+        since: sinceISO,
         perPage: 100,
         page,
       });
 
-      allCommits.push(...batch);
-
+      result.push(...batch);
       hasMore = batch.length === 100;
       page++;
 
@@ -90,29 +119,14 @@ export async function detectDependencyUpdates(owner, repo) {
         break;
       }
     }
-
-    return allCommits;
+    return result;
   });
 
-  logger.info(`${owner}/${repo}: ${commits.length} commits no período de análise`);
-
-  const depFileCommitShas = new Set();
-
-  for (const targetFile of config.detection.targetFiles) {
-    const pathCacheKey = `${owner}_${repo}_${targetFile}_commits`;
-
-    const commitsByPath = await withCache('dep-file-commits', pathCacheKey, () =>
-      listCommitsByPath(owner, repo, targetFile, since.toISOString())
-    );
-
-    for (const commit of commitsByPath) {
-      depFileCommitShas.add(commit.sha);
-    }
-  }
+  logger.info(`${owner}/${repo}: ${allCommits.length} commits totais no período`);
 
   const depUpdateCommits = [];
 
-  for (const commit of commits) {
+  for (const commit of allCommits) {
     const message = commit.commit?.message || '';
     const isKeywordMatch = matchesKeyword(message);
 

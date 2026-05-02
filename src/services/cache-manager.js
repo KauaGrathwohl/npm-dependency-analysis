@@ -18,6 +18,18 @@ function keyToPath(namespace, key) {
   return resolve(nsDir, `${safeKey}.json`);
 }
 
+// TTL por namespace em milissegundos
+const NAMESPACE_TTL = {
+  commits: 7 * 24 * 60 * 60 * 1000, // 7 dias para commits
+  'dep-file-commits': 7 * 24 * 60 * 60 * 1000, // 7 dias
+  'commit-detail': 14 * 24 * 60 * 60 * 1000, // 14 dias para detalhes
+  'pull-requests': 3 * 24 * 60 * 60 * 1000, // 3 dias para PRs (mudam frequentemente)
+  issues: 3 * 24 * 60 * 60 * 1000, // 3 dias para issues
+  repository: 30 * 24 * 60 * 60 * 1000, // 30 dias para dados de repo (quase nunca mudam)
+  'commit-count': 7 * 24 * 60 * 60 * 1000, // 7 dias
+  default: 7 * 24 * 60 * 60 * 1000, // 7 dias padrão
+};
+
 export function getCached(namespace, key) {
   const filePath = keyToPath(namespace, key);
 
@@ -28,13 +40,16 @@ export function getCached(namespace, key) {
     const entry = JSON.parse(raw);
 
     const ageMs = Date.now() - entry.timestamp;
-    const maxAgeMs = 24 * 60 * 60 * 1000; // 24h
+    const maxAgeMs = NAMESPACE_TTL[namespace] || NAMESPACE_TTL.default;
 
     if (ageMs > maxAgeMs) {
-      logger.debug(`Cache expirado para ${namespace}/${key}`);
+      logger.debug(
+        `Cache expirado para ${namespace}/${key} (${(ageMs / (1000 * 60 * 60)).toFixed(1)}h)`
+      );
       return null;
     }
 
+    logger.debug(`Cache hit: ${namespace}/${key} (${(ageMs / (1000 * 60 * 60)).toFixed(1)}h)`);
     return entry.data;
   } catch {
     return null;
