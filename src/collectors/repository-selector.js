@@ -101,7 +101,9 @@ async function validateRepository(repoData) {
   );
 
   if (commitPage.length < config.research.minCommits) {
-    validationResult.reasons.push(`commits insuficientes: ${commitPage.length} < ${config.research.minCommits}`);
+    validationResult.reasons.push(
+      `commits insuficientes: ${commitPage.length} < ${config.research.minCommits}`
+    );
     return validationResult;
   }
 

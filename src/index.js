@@ -51,7 +51,6 @@ async function onResume(options) {
   }
 }
 
-
 async function onValidate() {
   try {
     validateConfig();
@@ -75,7 +74,7 @@ program
   .name('npm-dep-analysis')
   .description(
     'Coleta de dados para análise do impacto das atualizações de dependências ' +
-    'no esforço de manutenção em projetos open-source do ecossistema NPM'
+      'no esforço de manutenção em projetos open-source do ecossistema NPM'
   )
   .version('1.0.0');
 

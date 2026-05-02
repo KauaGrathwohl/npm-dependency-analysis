@@ -113,13 +113,16 @@ export async function exportDataset(collectedData) {
     ]);
   }
 
-  exportJSON({
-    collectionDate: new Date().toISOString(),
-    analysisMonths: config.research.analysisMonths,
-    sampleSize: collectedData.length,
-    selectionCriteria: config.research,
-    detectionConfig: config.detection,
-  }, 'collection-metadata');
+  exportJSON(
+    {
+      collectionDate: new Date().toISOString(),
+      analysisMonths: config.research.analysisMonths,
+      sampleSize: collectedData.length,
+      selectionCriteria: config.research,
+      detectionConfig: config.detection,
+    },
+    'collection-metadata'
+  );
 
   logger.info(`Dataset exportado com sucesso para ${config.paths.output}`);
 }

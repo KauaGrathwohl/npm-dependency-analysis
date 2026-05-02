@@ -48,7 +48,7 @@ async function collectRepositoryData(repo) {
   const [dependencyChanges, dependencySnapshot, maintenanceMetrics] = await Promise.all([
     analyzeDependencyChanges(owner, name, depCommits),
     collectDependencySnapshot(owner, name),
-    collectMaintenanceMetrics(owner, name, depCommits.length)
+    collectMaintenanceMetrics(owner, name, depCommits.length),
   ]);
 
   const updateSummary = summarizeUpdates(dependencyChanges);
@@ -135,7 +135,7 @@ export async function runFullPipeline() {
 
   logger.info(
     `Rate limit GitHub: ${rateLimit.remaining}/${rateLimit.limit} ` +
-    `(reset em ${new Date(rateLimit.reset * 1000).toLocaleTimeString()})`
+      `(reset em ${new Date(rateLimit.reset * 1000).toLocaleTimeString()})`
   );
 
   const repositories = await runPhaseSelect();

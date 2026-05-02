@@ -37,9 +37,7 @@ function isDependencyPR(pr) {
     textMatchesKeywords(label.name, ['dependencies', 'deps', 'dependabot'])
   );
 
-  const authorMatch = ['dependabot[bot]', 'dependabot'].includes(
-    pr.user?.login
-  );
+  const authorMatch = ['dependabot[bot]', 'dependabot'].includes(pr.user?.login);
 
   return titleMatch || bodyMatch || labelMatch || authorMatch;
 }
@@ -90,15 +88,15 @@ export async function collectPullRequestMetrics(owner, repo) {
   const medianMergeTimeHours =
     mergeTimes.length > 0
       ? (() => {
-        const sorted = [...mergeTimes].sort((a, b) => a - b);
-        const mid = Math.floor(sorted.length / 2);
-        return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-      })()
+          const sorted = [...mergeTimes].sort((a, b) => a - b);
+          const mid = Math.floor(sorted.length / 2);
+          return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+        })()
       : null;
 
   logger.info(
     `${owner}/${repo}: ${depPRs.length} PRs de dependência ` +
-    `(${mergedDepPRs.length} merged, avg merge: ${avgMergeTimeHours?.toFixed(1) ?? 'N/A'}h)`
+      `(${mergedDepPRs.length} merged, avg merge: ${avgMergeTimeHours?.toFixed(1) ?? 'N/A'}h)`
   );
 
   return {

@@ -28,12 +28,7 @@ const config = Object.freeze({
 
   detection: {
     targetFiles: ['package.json', 'package-lock.json'],
-    commitKeywords: [
-      'chore(deps)',
-      'update dependency',
-      'bump',
-      'dependabot',
-    ],
+    commitKeywords: ['chore(deps)', 'update dependency', 'bump', 'dependabot'],
   },
 
   concurrency: {
