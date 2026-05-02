@@ -13,6 +13,8 @@ permissions:
 jobs:
   collect-and-release:
     runs-on: ubuntu-latest
+    env:
+      OUTPUT_DIR: ./data/output
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -30,21 +32,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Find output directory
-        id: find_output
-        run: |
-          for d in ./collect-output ./output ./dist ./reports ./build; do
-            if [ -d "$d" ] && [ "$(ls -A "$d")" ]; then
-              echo "OUTDIR=$d" >> $GITHUB_OUTPUT
-              exit 0
-            fi
-          done
-          echo "Nenhum diretório de saída encontrado entre: collect-output, output, dist, reports, build" >&2
-          exit 1
-
       - name: Zip artifacts
         run: |
-          zip -r artifacts.zip "${{ steps.find_output.outputs.OUTDIR }}"
+          zip -r artifacts.zip "$OUTPUT_DIR"
 
       - name: Create GitHub Release and upload assets
         uses: ncipollo/release-action@v1
