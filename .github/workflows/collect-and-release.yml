@@ -32,6 +32,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Run statistical analysis
+        run: npm run analyse
+
       - name: Zip artifacts
         run: |
           zip -r artifacts.zip "$OUTPUT_DIR"

@@ -135,6 +135,16 @@ O pipeline de coleta opera em três fases sequenciais:
 3. `dependency-changes.csv` — cada mudança individual de dependência
 4. `collection-metadata.json` — metadados da coleta (data, critérios, configuração)
 
+### Fase 4: Análise Estatística
+
+Ao executar `npm run analyse`, o projeto lê o arquivo `data/output/repositories-summary.csv` e gera os artefatos abaixo em `data/output/analysis/`:
+
+1. `analysis-summary.json` — resumo consolidado com estatísticas descritivas e correlações
+2. `analysis-descriptive.csv` — estatísticas descritivas por variável numérica
+3. `analysis-correlations.csv` — correlações de Spearman entre variáveis
+4. `analysis-cases.csv` — base por repositório com métricas derivadas, como razão Inc/Man
+5. `analysis-report.md` — relatório em Markdown com visão geral da análise
+
 ---
 
 ## Configuração do Ambiente
@@ -175,6 +185,12 @@ cp .env.example .env
 
 ```bash
 npm start collect
+```
+
+### Executar Análise Estatística
+
+```bash
+npm run analyse
 ```
 
 ### Executar Apenas Seleção de Repositórios

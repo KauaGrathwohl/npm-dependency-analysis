@@ -31,6 +31,40 @@ const config = Object.freeze({
     commitKeywords: ['chore(deps)', 'update dependency', 'bump', 'dependabot'],
   },
 
+  analysis: {
+    numericFields: [
+      'stars',
+      'direct_dependencies',
+      'transitive_dependencies',
+      'dep_update_commits',
+      'total_dep_updates',
+      'major_updates',
+      'minor_updates',
+      'patch_updates',
+      'dep_pull_requests',
+      'merged_dep_prs',
+      'avg_merge_time_hours',
+      'median_merge_time_hours',
+      'dep_issues',
+      'total_issues',
+      'total_prs',
+    ],
+    correlationPairs: [
+      ['total_dep_updates', 'dep_update_commits'],
+      ['total_dep_updates', 'dep_pull_requests'],
+      ['total_dep_updates', 'merged_dep_prs'],
+      ['total_dep_updates', 'dep_issues'],
+      ['total_dep_updates', 'total_prs'],
+      ['total_dep_updates', 'avg_merge_time_hours'],
+      ['total_dep_updates', 'median_merge_time_hours'],
+      ['total_dep_updates', 'direct_dependencies'],
+      ['total_dep_updates', 'transitive_dependencies'],
+      ['minor_updates', 'patch_updates'],
+      ['minor_updates', 'dep_pull_requests'],
+      ['minor_updates', 'avg_merge_time_hours'],
+    ],
+  },
+
   concurrency: {
     limit: parseInt(process.env.CONCURRENCY_LIMIT, 10) || 3,
   },
@@ -38,6 +72,7 @@ const config = Object.freeze({
   paths: {
     root: ROOT_DIR,
     output: resolve(ROOT_DIR, process.env.OUTPUT_DIR || 'data/output'),
+    analysis: resolve(ROOT_DIR, process.env.OUTPUT_DIR || 'data/output', 'analysis'),
     cache: resolve(ROOT_DIR, 'data/cache'),
     logs: resolve(ROOT_DIR, 'logs'),
   },
