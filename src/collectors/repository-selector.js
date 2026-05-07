@@ -3,6 +3,41 @@ import { withCache } from '../services/cache-manager.js';
 import config from '../config/index.js';
 import logger from '../config/logger.js';
 
+// Padrões no nome do repositório que indicam conteúdo educacional ou curado
+const NAME_BLACKLIST = [
+  /\balgorithm(s)?\b/i,
+  /\bawesome\b/i,
+  /\bconcepts?\b/i,
+  /\bcheatsheet(s)?\b/i,
+  /\binterview[\s-]?question(s)?\b/i,
+  /\btutorial(s)?\b/i,
+  /\bbeginners?\b/i,
+  /\bdays?[- ]of\b/i,
+  /\bfor[- ]beginners?\b/i,
+  /\bfor[- ]humans?\b/i,
+  /\bstudy[- ]?guide\b/i,
+  /\blearning[- ]?path\b/i,
+];
+
+// Padrões na descrição que indicam repositório de documentação ou guia
+const DESC_BLACKLIST = [
+  /\bstyle\s+guide\b/i,
+  /\bcode\s+snippets?\b/i,
+  /\bcurated\s+list\b/i,
+  /\bcollection\s+of\b/i,
+  /\blearning\s+resources?\b/i,
+  /\bcourse\s+material(s)?\b/i,
+  /\beducational\s+content\b/i,
+  /\bcourse\s+curriculum\b/i,
+];
+
+function isDocumentationRepo(name, description) {
+  if (NAME_BLACKLIST.some((pattern) => pattern.test(name))) return true;
+  if (description && DESC_BLACKLIST.some((pattern) => pattern.test(description))) return true;
+
+  return false;
+}
+
 function buildSearchQuery() {
   const cutoffDate = new Date();
   cutoffDate.setMonth(cutoffDate.getMonth() - config.research.maxInactivityMonths);
@@ -50,8 +85,21 @@ async function usesNpm(owner, repo) {
   return true;
 }
 
+async function hasMinimumRuntimeDependencies(owner, repo) {
+  const content = await githubClient.getFileContent(owner, repo, 'package.json');
+  if (!content) return false;
+
+  const pkg = parsePackageJson(content);
+  if (!pkg) return false;
+
+  const runtimeDeps = Object.keys(pkg.dependencies || {});
+
+  return runtimeDeps.length >= config.research.minRuntimeDependencies;
+}
+
 async function validateRepository(repoData) {
-  const { owner, name, full_name, stargazers_count, pushed_at, archived, fork } = repoData;
+  const { owner, name, full_name, stargazers_count, pushed_at, archived, fork, description } =
+    repoData;
   const ownerLogin = owner.login;
   const validationResult = {
     fullName: full_name,
@@ -96,6 +144,20 @@ async function validateRepository(repoData) {
     return validationResult;
   }
 
+  if (isDocumentationRepo(name, description)) {
+    validationResult.reasons.push('repositório de documentação ou guia educacional');
+    return validationResult;
+  }
+
+  const hasRuntimeDeps = await hasMinimumRuntimeDependencies(ownerLogin, name);
+
+  if (!hasRuntimeDeps) {
+    validationResult.reasons.push(
+      `sem dependências de runtime (mínimo: ${config.research.minRuntimeDependencies})`
+    );
+    return validationResult;
+  }
+
   const commitPage = await withCache('commit-count', `${ownerLogin}_${name}`, () =>
     githubClient.listCommits(ownerLogin, name, { perPage: 100, page: 1 })
   );
@@ -112,15 +174,17 @@ async function validateRepository(repoData) {
   return validationResult;
 }
 
-export async function selectRepositories(targetCount = config.research.sampleSize) {
+export async function selectRepositories(
+  targetCount = config.research.sampleSize + config.research.collectionBuffer
+) {
   logger.info(`Iniciando seleção de ${targetCount} repositórios...`);
   const query = buildSearchQuery();
   logger.info(`Query de busca: ${query}`);
 
   const selected = [];
   const rejected = [];
-  const perPage = 30;
-  const maxPages = 20;
+  const perPage = 100;
+  const maxPages = 10;
 
   let page = 1;
 

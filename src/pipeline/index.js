@@ -64,6 +64,25 @@ async function collectRepositoryData(repo) {
   };
 }
 
+async function collectRepositoryDataWithRetry(repo, maxRetries = 2) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await collectRepositoryData(repo);
+    } catch (error) {
+      if (attempt >= maxRetries) throw error;
+
+      const waitMs = 5000 * attempt;
+
+      logger.warn(
+        `Tentativa ${attempt}/${maxRetries} falhou para ${repo.fullName}: ${error.message}. ` +
+          `Aguardando ${waitMs / 1000}s antes de tentar novamente...`
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, waitMs));
+    }
+  }
+}
+
 export async function runPhaseSelect() {
   const { selected, rejected } = await selectRepositories();
 
@@ -94,11 +113,11 @@ export async function runPhaseCollect(repositories) {
   const tasks = repositories.map((repo) =>
     limit(async () => {
       try {
-        const data = await collectRepositoryData(repo);
+        const data = await collectRepositoryDataWithRetry(repo);
 
         results.push(data);
       } catch (error) {
-        logger.error(`Falha ao coletar ${repo.fullName}: ${error.message}`);
+        logger.error(`Falha definitiva ao coletar ${repo.fullName}: ${error.message}`);
         errors.push({ repository: repo.fullName, error: error.message });
       } finally {
         completed++;
@@ -117,7 +136,23 @@ export async function runPhaseCollect(repositories) {
     exportJSON(errors, 'collection-errors');
   }
 
-  return results;
+  const targetSize = config.research.sampleSize;
+  const selectionIndex = new Map(repositories.map((r, i) => [r.fullName, i]));
+  const orderedResults = results
+    .sort(
+      (a, b) => (selectionIndex.get(a.fullName) ?? 999) - (selectionIndex.get(b.fullName) ?? 999)
+    )
+    .slice(0, targetSize);
+
+  if (orderedResults.length < targetSize) {
+    logger.warn(
+      `Aviso: apenas ${orderedResults.length} de ${targetSize} repositórios coletados com sucesso. Aumente o collectionBuffer em config se necessário.`
+    );
+  } else {
+    logger.info(`Amostra final: ${orderedResults.length} repositórios.`);
+  }
+
+  return orderedResults;
 }
 
 export async function runPhaseExport(collectedData) {

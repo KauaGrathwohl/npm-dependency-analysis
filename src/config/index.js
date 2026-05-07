@@ -21,6 +21,8 @@ const config = Object.freeze({
     analysisMonths: 12,
     minStars: 500,
     minCommits: 100,
+    collectionBuffer: 5,
+    minRuntimeDependencies: 1,
     maxInactivityMonths: 12,
     language: 'JavaScript',
     requiredFiles: ['package.json'],
