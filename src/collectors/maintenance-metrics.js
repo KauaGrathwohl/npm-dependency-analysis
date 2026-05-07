@@ -77,6 +77,7 @@ export async function collectPullRequestMetrics(owner, repo) {
 
   const depPRs = filteredPRs.filter(isDependencyPR);
   const mergedDepPRs = depPRs.filter((pr) => pr.merged_at);
+  const rejectedDepPRs = depPRs.filter((pr) => pr.state === 'closed' && !pr.merged_at);
 
   const mergeTimes = mergedDepPRs
     .map((pr) => calculateMergeTimeHours(pr.created_at, pr.merged_at))
@@ -94,15 +95,20 @@ export async function collectPullRequestMetrics(owner, repo) {
         })()
       : null;
 
+  const rejectionRate =
+    depPRs.length > 0 ? rejectedDepPRs.length / depPRs.length : null;
+
   logger.info(
     `${owner}/${repo}: ${depPRs.length} PRs de dependência ` +
-      `(${mergedDepPRs.length} merged, avg merge: ${avgMergeTimeHours?.toFixed(1) ?? 'N/A'}h)`
+      `(${mergedDepPRs.length} merged, ${rejectedDepPRs.length} rejeitadas, avg merge: ${avgMergeTimeHours?.toFixed(1) ?? 'N/A'}h)`
   );
 
   return {
     totalPRs: filteredPRs.length,
     dependencyPRs: depPRs.length,
     mergedDependencyPRs: mergedDepPRs.length,
+    rejectedDependencyPRs: rejectedDepPRs.length,
+    rejectionRate,
     openDependencyPRs: depPRs.filter((pr) => pr.state === 'open').length,
     avgMergeTimeHours,
     medianMergeTimeHours,

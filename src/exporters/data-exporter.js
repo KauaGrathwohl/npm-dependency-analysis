@@ -53,6 +53,11 @@ export async function exportDataset(collectedData) {
     patch_updates: repo.updateSummary?.patch ?? 0,
     dep_pull_requests: repo.maintenanceMetrics?.pullRequests?.dependencyPRs ?? 0,
     merged_dep_prs: repo.maintenanceMetrics?.pullRequests?.mergedDependencyPRs ?? 0,
+    rejected_dep_prs: repo.maintenanceMetrics?.pullRequests?.rejectedDependencyPRs ?? 0,
+    dep_pr_rejection_rate:
+      repo.maintenanceMetrics?.pullRequests?.rejectionRate != null
+        ? repo.maintenanceMetrics.pullRequests.rejectionRate.toFixed(4)
+        : '',
     avg_merge_time_hours:
       repo.maintenanceMetrics?.pullRequests?.avgMergeTimeHours?.toFixed(2) ?? '',
     median_merge_time_hours:
@@ -74,6 +79,8 @@ export async function exportDataset(collectedData) {
     'patch_updates',
     'dep_pull_requests',
     'merged_dep_prs',
+    'rejected_dep_prs',
+    'dep_pr_rejection_rate',
     'avg_merge_time_hours',
     'median_merge_time_hours',
     'dep_issues',

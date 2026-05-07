@@ -28,7 +28,7 @@ const config = Object.freeze({
 
   detection: {
     targetFiles: ['package.json', 'package-lock.json'],
-    commitKeywords: ['chore(deps)', 'update dependency', 'bump', 'dependabot'],
+    commitKeywords: ['chore(deps)', 'update dependency', 'bump', 'dependabot', 'renovate'],
   },
 
   analysis: {
@@ -43,6 +43,8 @@ const config = Object.freeze({
       'patch_updates',
       'dep_pull_requests',
       'merged_dep_prs',
+      'rejected_dep_prs',
+      'dep_pr_rejection_rate',
       'avg_merge_time_hours',
       'median_merge_time_hours',
       'dep_issues',
@@ -62,6 +64,7 @@ const config = Object.freeze({
       ['minor_updates', 'patch_updates'],
       ['minor_updates', 'dep_pull_requests'],
       ['minor_updates', 'avg_merge_time_hours'],
+      ['total_dep_updates', 'dep_pr_rejection_rate'],
     ],
   },
 
